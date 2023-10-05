@@ -4,13 +4,13 @@ from functools import partial
 from timm.data.loader import _worker_init
 from timm.data.distributed_sampler import OrderedDistributedSampler
 from exhaustive_weighted_random_sampler import ExhaustiveWeightedRandomSampler
-from ignite.distributed import DistributedProxySampler
+# from ignite.distributed import DistributedProxySampler
 from torch.utils.data import BatchSampler
 import sys
 try:
     from datasets.transforms import *
 except:
-    from transforms import *
+    from .transforms import *
 
 import cv2
 import os
@@ -276,11 +276,11 @@ if __name__ == "__main__":
                         help='YAML config file specifying default arguments')
     parser = argparse.ArgumentParser(description='PyTorch Training')
     parser.add_argument(
-        '--data_dir', default='data/classification_dataset/images/', type=str)
+        '--data_dir', default='E:/LLD-MMRI2023/main/data/classification_dataset/images', type=str)
     parser.add_argument(
-        '--train_anno_file', default='data/classification_dataset/labels/train_fold1.txt', type=str)
+        '--train_anno_file', default='E:/Git/gitproject/miccai2023/data/trainval_labels/train_fold1.txt', type=str)
     parser.add_argument(
-        '--val_anno_file', default='data/classification_dataset/labels/val_fold1.txt', type=str)
+        '--val_anno_file', default='E:/Git/gitproject/miccai2023/data/trainval_labels/val_fold1.txt', type=str)
     parser.add_argument('--train_transform_list', default=['random_crop',
                                                            'z_flip',
                                                            'x_flip',
@@ -296,7 +296,12 @@ if __name__ == "__main__":
     parser.add_argument('--flip_prob', default=0.5, type=float,
                         help='Random flip prob (default: 0.5)')
     parser.add_argument('--angle', default=45, type=int)
-
+    parser.add_argument(
+        '--mode', default='trilinear', type=str)
+    parser.add_argument(
+        '--return_glb', default=False, type=bool)
+    parser.add_argument(
+        '--mixup', default=False, type=bool)
     def _parse_args():
         # Do we have a config file to parse?
         args_config, remaining = config_parser.parse_known_args()
@@ -318,10 +323,10 @@ if __name__ == "__main__":
     print(args_text)
 
     args.distributed = False
-    args.batch_size = 100
+    args.batch_size = 2
 
     dataset = MultiPhaseLiverDataset(args, is_training=True)
-    data_loader = create_loader(dataset, batch_size=3, is_training=True)
+    data_loader = create_loader(dataset, batch_size=2, is_training=True)
     # data_loader = torch.utils.data.DataLoader(dataset, batch_size=3)
     for images, labels in data_loader:
         print(images.shape)

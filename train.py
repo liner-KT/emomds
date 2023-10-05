@@ -45,10 +45,12 @@ except ImportError:
 
 from metrics import *
 from datasets.mp_liver_dataset import MultiPhaseLiverDataset, create_loader
+from datasets.emomds_dataset import AbdomenCTDataset,create_loader_CT
 import models
 
 import csv
 from losses.cb_loss import ClassBalancedLoss
+from losses.cr_loss import CrLoss
 
 torch.backends.cudnn.benchmark = True
 _logger = logging.getLogger('train')
@@ -176,6 +178,8 @@ parser.add_argument('--drop-block', type=float, default=None, metavar='PCT',
                     help='Drop block rate (default: None)')
 parser.add_argument('--cb_loss', action='store_true', default=False,
                     help='if use cb_loss')
+parser.add_argument('--cr_loss', action='store_true', default=False,
+                    help='if use cr_loss')
 
 # Batch norm parameters (only works with gen_efficientnet based models currently)
 parser.add_argument('--bn-tf', action='store_true', default=False,
@@ -208,7 +212,7 @@ parser.add_argument('--recovery-interval', type=int, default=0, metavar='N',
                     help='how many batches to wait before writing recovery checkpoint')
 parser.add_argument('--checkpoint-hist', type=int, default=1, metavar='N',
                     help='number of checkpoints to keep (default: 10)')
-parser.add_argument('-j', '--workers', type=int, default=8, metavar='N',
+parser.add_argument('-j', '--workers', type=int, default=2, metavar='N',
                     help='how many training processes to use (default: 8)')
 parser.add_argument('--amp', action='store_true', default=False,
                     help='use NVIDIA Apex AMP or Native AMP for mixed precision training')
@@ -234,6 +238,16 @@ parser.add_argument('--torchscript', dest='torchscript', action='store_true',
                     help='convert model torchscript for inference')
 parser.add_argument('--log-wandb', action='store_true', default=False,
                     help='log training and validation metrics to wandb')
+parser.add_argument(
+        '--csvfile', default='E:/Git/gitproject/miccai2023/data/test.csv', type=str)
+parser.add_argument(
+        '--seg_dir', default='E:/Git/gitproject/miccai2023/data/test.csv', type=str)
+parser.add_argument(
+        '--patch_num', default=2, type=int)
+parser.add_argument(
+        '--cut_crop_size', default=(48,256,256),nargs='+', type=int)
+parser.add_argument(
+        '--mul_labels', default=False, action='store_true')
 
 
 def _parse_args():
@@ -405,17 +419,19 @@ def main():
         _logger.info('Scheduled epochs: {}'.format(num_epochs))
 
     # create the train and eval datasets/dataloader
-    dataset_train = MultiPhaseLiverDataset(args, is_training=True)
+    dataset_train = AbdomenCTDataset(args, is_training=True)
+    if args.mul_labels:
+        total_class = np.unique(np.array([0, 1]))
+    else:
+        total_class = np.unique(np.array(dataset_train.lab_list))
+        count = []
+        for i in total_class:
+            print("num_class:%s=%s"%(i,len(np.where(np.array(dataset_train.lab_list)==i)[0])))
+            count.append(len(np.where(np.array(dataset_train.lab_list)==i)[0]))
 
-    total_class = np.unique(np.array(dataset_train.lab_list))
-    count = []
-    for i in total_class:
-        print("num_class:%s=%s"%(i,len(np.where(np.array(dataset_train.lab_list)==i)[0])))
-        count.append(len(np.where(np.array(dataset_train.lab_list)==i)[0]))
+    dataset_eval = AbdomenCTDataset(args, is_training=False)
 
-    dataset_eval = MultiPhaseLiverDataset(args, is_training=False)
-
-    loader_train = create_loader(dataset_train, 
+    loader_train = create_loader_CT(dataset_train,
                                 batch_size=args.batch_size,
                                 is_training=True,
                                 num_workers=args.workers,
@@ -424,7 +440,7 @@ def main():
                                 mode=args.sampling,
                                 )
     
-    loader_eval = create_loader(dataset_eval, 
+    loader_eval = create_loader_CT(dataset_eval,
                                 batch_size=args.batch_size,
                                 is_training=False,
                                 num_workers=args.workers,
@@ -445,10 +461,12 @@ def main():
         if args.cb_loss:
             sample = torch.tensor(count)
             train_loss_fn = ClassBalancedLoss(samples_per_class=sample,num_classes=args.num_classes)
+        elif args.cr_loss:
+            train_loss_fn = CrLoss()
         else:
             train_loss_fn = nn.CrossEntropyLoss()
     train_loss_fn = train_loss_fn.cuda()
-    validate_loss_fn = nn.CrossEntropyLoss().cuda()
+    validate_loss_fn = CrLoss().cuda()
 
     # setup checkpoint saver and eval metric tracking
     eval_metric = args.eval_metric
@@ -579,25 +597,13 @@ def train_one_epoch(
     end = time.time()
     last_idx = len(loader) - 1
     num_updates = epoch * len(loader)
-    for batch_idx, item in enumerate(loader):
-        if args.return_glb:
-            input = item[0]
-            target = item[1]
-            global_input = item[2]
-            input, target, global_input = input.cuda(), target.cuda(), global_input.cuda()
-        else:
-            input = item[0]
-            target = item[1]
-            input, target = input.cuda(), target.cuda()
+    for batch_idx, (input, seg, target) in enumerate(loader):
         last_batch = batch_idx == last_idx
         data_time_m.update(time.time() - end)
-
+        input, seg, target = input.cuda(), seg.cuda(), target.cuda()
         with amp_autocast():
-            if args.model == "uniformer_small_original" or args.model == "uniformer_base_original" or args.model == "uniformer_xs_original" or args.model == "uniformer_xxs_original" :
-                output,visualizations = model(input)
-            else:
-                raise ValueError('invalid model input')
-
+            # output = model(input,F.one_hot(target, num_classes = 7))
+            output = model(input,seg)
             loss = loss_fn(output, target)
 
         if not args.distributed:
@@ -671,23 +677,14 @@ def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix='')
     predictions = []
     labels = []
     last_idx = len(loader) - 1
-    for batch_idx, item in enumerate(loader):
-        if args.return_glb:
-            input = item[0]
-            target = item[1]
-            global_input = item[2]
-            input, target, global_input = input.cuda(), target.cuda(), global_input.cuda()
-        else:
-            input = item[0]
-            target = item[1]
-            input, target = input.cuda(), target.cuda()
+    for batch_idx, (input, seg, target) in enumerate(loader):
         last_batch = batch_idx == last_idx
+        input = input.cuda()
+        seg = seg.cuda()
+        target = target.cuda()
 
         with amp_autocast():
-            if args.model == "uniformer_small_original" or args.model == "uniformer_base_original" or args.model == "uniformer_xs_original" or args.model == "uniformer_xxs_original" :
-                output,visualizations = model(input)
-            else:
-                raise ValueError('invalid model input')
+            output = model(input, seg)
 
         if isinstance(output, (tuple, list)):
             output = output[0]

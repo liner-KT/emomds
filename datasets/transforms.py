@@ -7,7 +7,8 @@ from scipy import ndimage,signal
 from timm.models.layers import to_3tuple
 from PIL import Image,ImageFilter
 from scipy.interpolate import RegularGridInterpolator,Rbf
-import tricubic
+from matplotlib import pyplot as plt
+# import tricubic
 import cv2
 from torchvision import transforms as tf
 try:
@@ -20,26 +21,60 @@ def load_nii_file(nii_image):
     image_array = sitk.GetArrayFromImage(image)
     return image_array
 
+def cut_3Dimage(image, patch_num):
+    depth, width, height = image.shape
+    item_width = int(width / patch_num)
+    item_depth = int(depth / patch_num)
+    item_height = int(height / patch_num)
+    box_list = []
+    # (front,behind,left,right,  upper, lower)
+    for i in range(0, patch_num):  # 三重循环，生成n张图片基于原图的位置
+        for j in range(0, patch_num):
+            for k in range(0, patch_num):
+                box = ( i*item_depth, (i+1)*item_depth, j * item_width, (j + 1) * item_width, k * item_height,  (k + 1) * item_height,)
+                box_list.append(box)
+    print(box_list)
+    # image_list = [image.crop(box) for box in box_list]  # Image.crop(left, up, right, below)
+    image_list = [image[box[0]:box[1],box[2]:box[3],box[4]:box[5]] for box in box_list]
+    return np.array(image_list)
 def resize3D(image, size, mode):
     size = to_3tuple(size)
     image = image.astype(np.float32)
     if mode == 'trilinear':
-        image = torch.from_numpy(image).unsqueeze(0).unsqueeze(0)
-        x = F.interpolate(image, size=size, mode='trilinear', align_corners=True).squeeze(0).squeeze(0)
+        image_s = torch.from_numpy(image).unsqueeze(0).unsqueeze(0)
+        x = F.interpolate(image_s, size=size, mode='trilinear', align_corners=True).squeeze(0).unsqueeze(0)
         return x.cpu().numpy()
-    elif mode == 'tricubic':
-        ip = tricubic.tricubic(list(image),list(image.shape))
-        x = np.zeros(size,dtype=np.float32)
-        z_ = np.linspace(0,image.shape[0]-1,num=size[0],endpoint=True)
-        h_ = np.linspace(0,image.shape[1]-1,num=size[1],endpoint=True)
-        w_ = np.linspace(0,image.shape[2]-1,num=size[2],endpoint=True)
-        for i, z in enumerate(z_):
-            for j, h in enumerate(h_):
-                for k, w in enumerate(w_):
-                    x[i][j][k] = ip.ip([z, h, w])
+    # elif mode == 'tricubic':
+    #     ip = tricubic.tricubic(list(image),list(image.shape))
+    #     x = np.zeros(size,dtype=np.float32)
+    #     z_ = np.linspace(0,image.shape[0]-1,num=size[0],endpoint=True)
+    #     h_ = np.linspace(0,image.shape[1]-1,num=size[1],endpoint=True)
+    #     w_ = np.linspace(0,image.shape[2]-1,num=size[2],endpoint=True)
+    #     for i, z in enumerate(z_):
+    #         for j, h in enumerate(h_):
+    #             for k, w in enumerate(w_):
+    #                 x[i][j][k] = ip.ip([z, h, w])
 
         return x
+def resizePatch3D(image, size, mode):
+    size = to_3tuple(size)
+    image = image.astype(np.float32)
+    if mode == 'trilinear':
+        image_s = torch.from_numpy(image).unsqueeze(0)
+        x = F.interpolate(image_s, size=size, mode='trilinear', align_corners=True).squeeze(0)
+        return x.cpu().numpy()
+    # elif mode == 'tricubic':
+    #     ip = tricubic.tricubic(list(image),list(image.shape))
+    #     x = np.zeros(size,dtype=np.float32)
+    #     z_ = np.linspace(0,image.shape[0]-1,num=size[0],endpoint=True)
+    #     h_ = np.linspace(0,image.shape[1]-1,num=size[1],endpoint=True)
+    #     w_ = np.linspace(0,image.shape[2]-1,num=size[2],endpoint=True)
+    #     for i, z in enumerate(z_):
+    #         for j, h in enumerate(h_):
+    #             for k, w in enumerate(w_):
+    #                 x[i][j][k] = ip.ip([z, h, w])
 
+        return x
 def image_normalization(image, win=None, adaptive=True):
     if win is not None:
         image = 1. * (image - win[0]) / (win[1] - win[0])
@@ -238,3 +273,25 @@ def diffframe(image):
         diff_img_3D = np.stack(diff_img, axis=0).reshape(num_model, Z, H, W)
         diff_img_3D = diff_img_3D.astype(np.float32)
         return diff_img_3D
+if __name__ == "__main__":
+    import os
+    # import nibabel as nib
+    # import matplotlib.pyplot as plt
+    img_path = "E:/Git/gitproject/FLARE22/nnunet/DATASET/nnUNet_raw/nnUNet_raw_data/Task022_FLARE22/imagesTr/FLARE22_Tr_0001_0000.nii.gz"
+    image = load_nii_file(img_path)
+
+
+
+    image_list = cut_3Dimage(image,2)
+    image_re = resize3D(image_list,(48,256,256),'trilinear')
+    # image_nor = image_normalization(image_re)
+
+
+    def showNii(img,patch):
+        for i in range(img.shape[1]):
+            plt.imshow(img[patch,i, :, :], cmap='gray')
+            plt.show()
+
+
+    showNii(image_re,2)
+

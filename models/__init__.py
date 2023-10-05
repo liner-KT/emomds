@@ -1,1 +1,2 @@
 from .uniformer import uniformer_small_original,uniformer_base_original,uniformer_xs_original,uniformer_xxs_original
+from .model3d import UniverSeg3d, CrossBlock, CrossConv3d, universeg3d

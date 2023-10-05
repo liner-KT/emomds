@@ -42,8 +42,8 @@ class AbdomenCTDataset(torch.utils.data.Dataset):
             self.data_dir = args.data_dir
             self.seg_dir = args.seg_dir
         else:
-            self.data_dir = args.pred_data_dir
-            self.seg_dir = args.pred_seg_dir
+            self.data_dir = args.val_data_dir
+            self.seg_dir = args.val_seg_dir
         # 读取数据图片路径
         img_name_list = os.listdir(self.data_dir)
         seg_name_list = os.listdir(self.seg_dir)

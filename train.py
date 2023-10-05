@@ -243,6 +243,10 @@ parser.add_argument(
 parser.add_argument(
         '--seg_dir', default='E:/Git/gitproject/miccai2023/data/test.csv', type=str)
 parser.add_argument(
+        '--pred_seg_dir', default='E:/Git/gitproject/miccai2023/data/test.csv', type=str)
+parser.add_argument(
+        '--pred_img_dir', default='E:/Git/gitproject/miccai2023/data/test.csv', type=str)
+parser.add_argument(
         '--patch_num', default=2, type=int)
 parser.add_argument(
         '--cut_crop_size', default=(48,256,256),nargs='+', type=int)

@@ -25,8 +25,7 @@ class AbdomenCTDataset(torch.utils.data.Dataset):
     def __init__(self, args, is_training=True):
         self.args = args
         self.size = args.img_size
-        self.data_dir = args.data_dir
-        self.seg_dir = args.seg_dir
+
         self.mode = args.mode
         self.is_training = is_training
         self.patch_num = args.patch_num
@@ -39,10 +38,12 @@ class AbdomenCTDataset(torch.utils.data.Dataset):
         #     phase_list_glb = ['T2WI_glb', 'DWI_glb', 'In Phase_glb', 'Out Phase_glb',
         #                       'C-pre_glb', 'C+A_glb', 'C+V_glb', 'C+Delay_glb']
 
-        # if is_training:
-        #     anno = np.loadtxt(args.train_anno_file, dtype=np.str_)
-        # else:
-        #     anno = np.loadtxt(args.val_anno_file, dtype=np.str_)
+        if is_training:
+            self.data_dir = args.data_dir
+            self.seg_dir = args.seg_dir
+        else:
+            self.data_dir = args.pred_data_dir
+            self.seg_dir = args.pred_seg_dir
         # 读取数据图片路径
         img_name_list = os.listdir(self.data_dir)
         seg_name_list = os.listdir(self.seg_dir)

@@ -19,11 +19,11 @@ from contextlib import suppress
 from torch.utils.data.dataloader import DataLoader
 from timm.models import create_model, load_checkpoint, is_model, list_models
 from timm.utils import setup_default_logging, set_jit_legacy
-from torchcam.methods import SmoothGradCAMpp
-from torchvision.transforms.functional import to_pil_image
-from matplotlib import cm
-from PIL import Image
-import cv2
+# from torchcam.methods import SmoothGradCAMpp
+# from torchvision.transforms.functional import to_pil_image
+# from matplotlib import cm
+# from PIL import Image
+# import cv2
 
 import models
 from metrics import *

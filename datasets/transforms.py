@@ -5,8 +5,8 @@ import SimpleITK as sitk
 import torch.nn.functional as F
 from scipy import ndimage,signal
 from timm.models.layers import to_3tuple
-from PIL import Image,ImageFilter
-from scipy.interpolate import RegularGridInterpolator,Rbf
+# from PIL import Image,ImageFilter
+# from scipy.interpolate import RegularGridInterpolator,Rbf
 from matplotlib import pyplot as plt
 # import tricubic
 import cv2
@@ -287,11 +287,11 @@ if __name__ == "__main__":
     # image_nor = image_normalization(image_re)
 
 
-    def showNii(img,patch):
-        for i in range(img.shape[1]):
-            plt.imshow(img[patch,i, :, :], cmap='gray')
-            plt.show()
-
-
-    showNii(image_re,2)
+    # def showNii(img,patch):
+    #     for i in range(img.shape[1]):
+    #         plt.imshow(img[patch,i, :, :], cmap='gray')
+    #         plt.show()
+    #
+    #
+    # showNii(image_re,2)
 

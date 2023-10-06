@@ -1,13 +1,13 @@
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 from collections import OrderedDict
-from distutils.fancy_getopt import FancyGetopt
-from re import M
+# from distutils.fancy_getopt import FancyGetopt
+# from re import M
 import torch
 import torch.nn as nn
 from functools import partial
-import torch.nn.functional as F
-import math
+# import torch.nn.functional as F
+# import math
 from timm.models.vision_transformer import _cfg
 from timm.models.registry import register_model
 from timm.models.layers import trunc_normal_, DropPath, to_2tuple

@@ -5,7 +5,7 @@ import einops as E
 import torch
 from timm.models import register_model
 from torch import nn
-import torch.nn.functional as F
+# import torch.nn.functional as F
 # from .nn import CrossConv3d
 from .nn import reset_conv3d_parameters
 from .nn import Vmap, vmap

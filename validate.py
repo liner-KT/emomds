@@ -2,20 +2,20 @@
 import argparse
 import os
 import json
-import csv
-import glob
+# import csv
+# import glob
 import time
 import logging
 import torch
 import torch.nn as nn
 import torch.nn.parallel
-import numpy as np
+# import numpy as np
 from tqdm import tqdm
 from collections import OrderedDict
 from contextlib import suppress
 from torch.utils.data.dataloader import DataLoader
 from timm.models import create_model, apply_test_time_pool, load_checkpoint, is_model, list_models
-from timm.data import create_dataset, create_loader, resolve_data_config, RealLabelsImagenet
+# from timm.data import create_dataset, create_loader, resolve_data_config, RealLabelsImagenet
 from timm.utils import accuracy, AverageMeter, natural_key, setup_default_logging, set_jit_legacy
 
 import models

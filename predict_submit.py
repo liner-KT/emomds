@@ -5,16 +5,16 @@ generate prediction on unlabeled data
 import argparse
 import os
 import json
-import csv
-import glob
-import time
+# import csv
+# import glob
+# import time
 import logging
 import torch
-import torch.nn as nn
+# import torch.nn as nn
 import torch.nn.parallel
-import numpy as np
+# import numpy as np
 from tqdm import tqdm
-from collections import OrderedDict
+# from collections import OrderedDict
 from contextlib import suppress
 from torch.utils.data.dataloader import DataLoader
 from timm.models import create_model, load_checkpoint, is_model, list_models

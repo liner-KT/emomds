@@ -3,7 +3,7 @@ import numpy as np
 from functools import partial
 from timm.data.loader import _worker_init
 from timm.data.distributed_sampler import OrderedDistributedSampler
-from exhaustive_weighted_random_sampler import ExhaustiveWeightedRandomSampler
+# from exhaustive_weighted_random_sampler import ExhaustiveWeightedRandomSampler
 # from ignite.distributed import DistributedProxySampler
 from torch.utils.data import BatchSampler
 import sys
